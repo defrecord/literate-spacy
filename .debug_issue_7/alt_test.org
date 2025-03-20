@@ -1,0 +1,27 @@
+#+TITLE: Alternative Tangle/Detangle Test
+#+AUTHOR: Claude
+
+* Python Code Example
+
+This is a test file with a different approach to tangling and detangling.
+
+#+NAME: example-python
+#+BEGIN_SRC python :tangle alt_test.py
+# -*- mode: python -*-
+"""
+Test Python module for tangle/detangle.
+"""
+
+def hello():
+    """Say hello to the world."""
+    print("Hello world!")
+    return "Hello world!"
+
+def add(x, y):
+    """Add two numbers."""
+    return x + y
+
+if __name__ == "__main__":
+    hello()
+    print(f"2 + 3 = {add(2, 3)}")
+#+END_SRC
