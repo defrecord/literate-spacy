@@ -137,9 +137,17 @@ class NLPProcessor:
             for token in doc
         ]
     
-    def _get_sentences(self, doc) -> List[str]:
-        """Extract sentences from spaCy doc."""
-        return [sent.text for sent in doc.sents]
+    def _get_sentences(self, doc) -> List[Dict[str, Any]]:
+        """Extract sentences from spaCy doc with metadata."""
+        return [
+            {
+                "text": sent.text,
+                "start": sent.start_char,
+                "end": sent.end_char,
+                "tokens_count": len(sent)
+            } 
+            for sent in doc.sents
+        ]
     
     def _get_pos_tags(self, doc) -> List[Dict[str, str]]:
         """Extract part-of-speech tags from spaCy doc."""
