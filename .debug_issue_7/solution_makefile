@@ -1,0 +1,24 @@
+.PHONY: tangle detangle clean
+
+# Tangle org file to generate code file with link comments
+tangle:
+	@echo "Tangling solution_test.org with link comments..."
+	@emacs --batch \
+		--eval "(require 'org)" \
+		--eval "(find-file \"solution_test.org\")" \
+		--eval "(org-babel-tangle)" \
+		--eval "(kill-buffer)"
+	@echo "Tangle complete"
+
+# Detangle from code file back to org file
+detangle:
+	@echo "Detangling solution_test.py back to solution_test.org..."
+	@emacs --batch \
+		--eval "(require 'org)" \
+		--eval "(org-babel-detangle \"solution_test.py\")" \
+		--eval "(message \"Detangle complete\")"
+	@echo "Detangle complete"
+
+clean:
+	@echo "Cleaning up..."
+	@rm -f solution_test.py
