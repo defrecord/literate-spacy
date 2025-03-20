@@ -48,9 +48,10 @@ lint:
 test:
 	pytest tests/
 
-# Org-mode tasks
+# Org-mode tasks - extract code from org files
 tangle:
-	$(EMACS) --batch --eval "(require 'org)" --eval "(progn (find-file \"$(ORG_FILE)\") (org-babel-tangle) (kill-buffer))"
+	$(EMACS) --batch --eval "(require 'org)" --eval "(find-file \"$(ORG_FILE)\")" --eval "(org-babel-tangle)" --eval "(kill-buffer)"
 
+# Org-mode tasks - update org files from source code
 detangle:
-	$(EMACS) --batch --eval "(require 'org)" --eval "(progn (find-file \"$(ORG_FILE)\") (org-babel-detangle) (save-buffer) (kill-buffer))"
+	$(EMACS) --batch --eval "(require 'org)" --eval "(find-file \"$(ORG_FILE)\")" --eval "(org-babel-detangle)" --eval "(save-buffer)" --eval "(kill-buffer)"
