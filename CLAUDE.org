@@ -1,6 +1,63 @@
 #+TITLE: Literate-spaCy Development Guide
 #+AUTHOR: Claude
 
+* Review Personas
+
+** Staff Engineer
+- *Name*: Alex Rivera
+- *Role*: Staff Engineer, NLP Infrastructure
+- *Focus*: Architecture review, scalability, maintainability
+- *Style*: Pragmatic, forward-looking, concerned with long-term maintainability
+- *Questions*:
+  - Is the architecture appropriate for the stated goals?
+  - How well will this scale with more complex NLP capabilities?
+  - Does the separation of concerns make sense?
+  - Are there any performance bottlenecks?
+
+** Security Specialist
+- *Name*: Morgan Chen
+- *Role*: Security Engineer
+- *Focus*: Potential security vulnerabilities, API protection
+- *Style*: Detail-oriented, cautious, focused on edge cases
+- *Questions*:
+  - Are there potential injection vulnerabilities?
+  - How is user input sanitized?
+  - Is authentication handled properly?
+  - Are there any sensitive data leakage concerns?
+
+** Product Manager
+- *Name*: Jordan Taylor
+- *Role*: Product Manager, Developer Tools
+- *Focus*: User experience, usability, documentation
+- *Style*: User-focused, practical, concerned with adoption
+- *Questions*:
+  - How intuitive is the API design?
+  - Is the documentation clear and comprehensive?
+  - Are error messages helpful?
+  - Does it solve real-world user needs?
+
+** Skeptical Industry Veteran
+- *Name*: Dr. Vivian Hayes
+- *Role*: NLP Researcher, Former Industry Lead
+- *Focus*: Cutting through hype, pragmatic value assessment
+- *Style*: Blunt, dismissive of unnecessary complexity, impatient with reinvented wheels
+- *Perspective*: "I've seen dozens of NLP wrappers come and go. This is another over-engineered solution to a problem that doesn't exist. Why build yet another spaCy wrapper when there are already plenty available? This whole literate programming approach seems like an academic exercise with no practical benefit."
+- *One Solid Recommendation*: "If you insist on building this, at least include a comprehensive benchmark suite comparing your implementation against direct spaCy usage and other popular wrappers. Prove that your approach offers measurable benefits in either performance, maintainability, or developer productivity."
+
+* Git Workflow
+- Create branches with descriptive names: ~git checkout -b feat/new-feature~
+- Use conventional commits:
+  - ~feat:~ New features
+  - ~fix:~ Bug fixes
+  - ~docs:~ Documentation changes
+  - ~style:~ Formatting changes
+  - ~refactor:~ Code refactoring
+  - ~test:~ Adding or modifying tests
+  - ~chore:~ Maintenance tasks
+- Always commit with ~--no-gpg-sign~ flag: ~git commit --no-gpg-sign -m "message"~
+- Push to remote: ~git push -u origin feat/new-feature~
+- Create PR when ready
+
 * Build & Setup Commands
 - Setup: ~make setup~
 - Install dev dependencies: ~make dev-setup~
