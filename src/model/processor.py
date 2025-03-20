@@ -21,25 +21,50 @@ class NLPProcessor:
         except OSError:
             raise ValueError(f"Model {model_name} not found. Run download_models.py first.")
             
-    def analyze_text(self, text: str) -> Dict[str, Any]:
+    def analyze_text(self, text: str, components: Optional[List[str]] = None) -> Dict[str, Any]:
         """
         Perform basic NLP analysis on the provided text.
         
         Args:
             text: Input text to analyze
+            components: List of analysis components to include
+                        (options: entities, tokens, sentences, pos_tags, dependencies)
+                        If None, include all components.
             
         Returns:
-            Dictionary with analysis results
+            Dictionary with analysis results for selected components
         """
+        # Input validation
+        if len(text) > 100000:
+            raise ValueError("Text too long. Maximum length is 100,000 characters.")
+            
+        # Process the text
         doc = self.nlp(text)
         
-        return {
-            "entities": self._get_entities(doc),
-            "tokens": self._get_tokens(doc),
-            "sentences": self._get_sentences(doc),
-            "pos_tags": self._get_pos_tags(doc),
-            "dependencies": self._get_dependencies(doc)
-        }
+        # Prepare results dictionary
+        result = {}
+        
+        # Default to all components if not specified
+        if components is None:
+            components = ["entities", "tokens", "sentences", "pos_tags", "dependencies"]
+            
+        # Add requested components to results
+        if "entities" in components:
+            result["entities"] = self._get_entities(doc)
+            
+        if "tokens" in components:
+            result["tokens"] = self._get_tokens(doc)
+            
+        if "sentences" in components:
+            result["sentences"] = self._get_sentences(doc)
+            
+        if "pos_tags" in components:
+            result["pos_tags"] = self._get_pos_tags(doc)
+            
+        if "dependencies" in components:
+            result["dependencies"] = self._get_dependencies(doc)
+            
+        return result
     
     def _get_entities(self, doc) -> List[Dict[str, Any]]:
         """Extract named entities from spaCy doc."""
@@ -50,9 +75,10 @@ class NLPProcessor:
         ]
     
     def _get_tokens(self, doc) -> List[Dict[str, str]]:
-        """Extract basic token information from spaCy doc."""
+        """Extract basic token information from spaCy doc.
+        Includes text and lemma for each token."""
         return [
-            {"text": token.text, "lemma": token.lemma_}
+            {"text": token.text, "lemma": token.lemma_, "is_stop": token.is_stop}
             for token in doc
         ]
     

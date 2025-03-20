@@ -130,9 +130,10 @@ class NLPProcessor:
         ]
     
     def _get_tokens(self, doc) -> List[Dict[str, str]]:
-        """Extract basic token information from spaCy doc."""
+        """Extract basic token information from spaCy doc.
+        Includes text and lemma for each token."""
         return [
-            {"text": token.text, "lemma": token.lemma_}
+            {"text": token.text, "lemma": token.lemma_, "is_stop": token.is_stop}
             for token in doc
         ]
     
