@@ -76,25 +76,50 @@ class NLPProcessor:
         except OSError:
             raise ValueError(f"Model {model_name} not found. Run download_models.py first.")
             
-    def analyze_text(self, text: str) -> Dict[str, Any]:
+    def analyze_text(self, text: str, components: Optional[List[str]] = None) -> Dict[str, Any]:
         """
         Perform basic NLP analysis on the provided text.
         
         Args:
             text: Input text to analyze
+            components: List of analysis components to include
+                        (options: entities, tokens, sentences, pos_tags, dependencies)
+                        If None, include all components.
             
         Returns:
-            Dictionary with analysis results
+            Dictionary with analysis results for selected components
         """
+        # Input validation
+        if len(text) > 100000:
+            raise ValueError("Text too long. Maximum length is 100,000 characters.")
+            
+        # Process the text
         doc = self.nlp(text)
         
-        return {
-            "entities": self._get_entities(doc),
-            "tokens": self._get_tokens(doc),
-            "sentences": self._get_sentences(doc),
-            "pos_tags": self._get_pos_tags(doc),
-            "dependencies": self._get_dependencies(doc)
-        }
+        # Prepare results dictionary
+        result = {}
+        
+        # Default to all components if not specified
+        if components is None:
+            components = ["entities", "tokens", "sentences", "pos_tags", "dependencies"]
+            
+        # Add requested components to results
+        if "entities" in components:
+            result["entities"] = self._get_entities(doc)
+            
+        if "tokens" in components:
+            result["tokens"] = self._get_tokens(doc)
+            
+        if "sentences" in components:
+            result["sentences"] = self._get_sentences(doc)
+            
+        if "pos_tags" in components:
+            result["pos_tags"] = self._get_pos_tags(doc)
+            
+        if "dependencies" in components:
+            result["dependencies"] = self._get_dependencies(doc)
+            
+        return result
     
     def _get_entities(self, doc) -> List[Dict[str, Any]]:
         """Extract named entities from spaCy doc."""
@@ -105,15 +130,24 @@ class NLPProcessor:
         ]
     
     def _get_tokens(self, doc) -> List[Dict[str, str]]:
-        """Extract basic token information from spaCy doc."""
+        """Extract basic token information from spaCy doc.
+        Includes text and lemma for each token."""
         return [
-            {"text": token.text, "lemma": token.lemma_}
+            {"text": token.text, "lemma": token.lemma_, "is_stop": token.is_stop}
             for token in doc
         ]
     
-    def _get_sentences(self, doc) -> List[str]:
-        """Extract sentences from spaCy doc."""
-        return [sent.text for sent in doc.sents]
+    def _get_sentences(self, doc) -> List[Dict[str, Any]]:
+        """Extract sentences from spaCy doc with metadata."""
+        return [
+            {
+                "text": sent.text,
+                "start": sent.start_char,
+                "end": sent.end_char,
+                "tokens_count": len(sent)
+            } 
+            for sent in doc.sents
+        ]
     
     def _get_pos_tags(self, doc) -> List[Dict[str, str]]:
         """Extract part-of-speech tags from spaCy doc."""
@@ -157,9 +191,9 @@ The server exposes our NLP functionality via a FastAPI interface.
 FastAPI server providing NLP endpoints using our processor.
 """
 import os
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import uvicorn
 
 from ..model.processor import NLPProcessor
@@ -169,6 +203,10 @@ class TextRequest(BaseModel):
     """Request model for text analysis."""
     text: str
     model: Optional[str] = "en_core_web_sm"
+    components: Optional[List[str]] = Field(
+        None, 
+        description="List of analysis components to include. Options: entities, tokens, sentences, pos_tags, dependencies"
+    )
 
 
 class HealthResponse(BaseModel):
@@ -231,9 +269,12 @@ async def analyze_text(request: TextRequest) -> Dict[str, Any]:
                 detail=f"Model '{model_name}' not available. Run download_models.py first."
             )
     
-    # Process the text
-    processor = processors[model_name]
-    return processor.analyze_text(request.text)
+    try:
+        # Process the text
+        processor = processors[model_name]
+        return processor.analyze_text(request.text, components=request.components)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 def start_server(host: str = "0.0.0.0", port: int = 8000):

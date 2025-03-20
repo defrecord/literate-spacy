@@ -1,6 +1,82 @@
 #+TITLE: Literate-spaCy Development Guide
 #+AUTHOR: Claude
 
+* Review Personas
+
+** Staff Engineer
+- *Name*: Alex Rivera
+- *Role*: Staff Engineer, NLP Infrastructure
+- *Focus*: Architecture review, scalability, maintainability
+- *Style*: Pragmatic, forward-looking, concerned with long-term maintainability
+- *Questions*:
+  - Is the architecture appropriate for the stated goals?
+  - How well will this scale with more complex NLP capabilities?
+  - Does the separation of concerns make sense?
+  - Are there any performance bottlenecks?
+
+** Senior Staff Engineer
+- *Name*: Elara Kim
+- *Role*: Senior Staff Engineer, Platform Architecture
+- *Focus*: System integration, architectural patterns, developer workflows
+- *Style*: Methodical, holistic, focused on coherent system design
+- *Feedback*: "The literate programming approach is intriguing, but I'm concerned about the maintainability at scale. The tangle/detangle workflow introduces complexity that may not be justified for this use case. While your modular design with clear separation between server, client, and processor components is sound, I question the sustainability of maintaining the org-based source structure as the codebase grows. Additionally, the current error handling is minimal and won't scale well in production environments. I'd recommend:
+  1. Establishing clear upgrade paths for spaCy model versions
+  2. Implementing structured logging with severity levels
+  3. Consider defining formal API contracts with versioning
+  4. Develop a more robust development environment setup process that standardizes the tangle/detangle workflow"
+
+** Security Specialist
+- *Name*: Morgan Chen
+- *Role*: Security Engineer
+- *Focus*: Potential security vulnerabilities, API protection
+- *Style*: Detail-oriented, cautious, focused on edge cases
+- *Questions*:
+  - Are there potential injection vulnerabilities?
+  - How is user input sanitized?
+  - Is authentication handled properly?
+  - Are there any sensitive data leakage concerns?
+
+** Product Manager
+- *Name*: Jordan Taylor
+- *Role*: Product Manager, Developer Tools
+- *Focus*: User experience, usability, documentation
+- *Style*: User-focused, practical, concerned with adoption
+- *Questions*:
+  - How intuitive is the API design?
+  - Is the documentation clear and comprehensive?
+  - Are error messages helpful?
+  - Does it solve real-world user needs?
+
+** Skeptical Industry Veteran
+- *Name*: Dr. Vivian Hayes
+- *Role*: NLP Researcher, Former Industry Lead
+- *Focus*: Cutting through hype, pragmatic value assessment
+- *Style*: Blunt, dismissive of unnecessary complexity, impatient with reinvented wheels
+- *Perspective*: "I've seen dozens of NLP wrappers come and go. This is another over-engineered solution to a problem that doesn't exist. Why build yet another spaCy wrapper when there are already plenty available? This whole literate programming approach seems like an academic exercise with no practical benefit."
+- *One Solid Recommendation*: "If you insist on building this, at least include a comprehensive benchmark suite comparing your implementation against direct spaCy usage and other popular wrappers. Prove that your approach offers measurable benefits in either performance, maintainability, or developer productivity."
+
+* Literate Programming Workflow
+- Always edit ~.org~ files, not the generated Python files
+- Add ~:comments link~ to all src blocks: ~#+begin_src python :tangle file.py :comments link~
+- Run ~make tangle~ to generate code files with proper link comments
+- Make changes to org files whenever possible
+- If you must edit Python files directly, run ~make detangle~ to sync changes back
+- Run ~make status~ to check if files need tangling or detangling
+
+* Git Workflow
+- Create branches with descriptive names: ~git checkout -b feat/new-feature~
+- Use conventional commits:
+  - ~feat:~ New features
+  - ~fix:~ Bug fixes
+  - ~docs:~ Documentation changes
+  - ~style:~ Formatting changes
+  - ~refactor:~ Code refactoring
+  - ~test:~ Adding or modifying tests
+  - ~chore:~ Maintenance tasks
+- Always commit with ~--no-gpg-sign~ flag: ~git commit --no-gpg-sign -m "message"~
+- Push to remote: ~git push -u origin feat/new-feature~
+- Create PR when ready
+
 * Build & Setup Commands
 - Setup: ~make setup~
 - Install dev dependencies: ~make dev-setup~

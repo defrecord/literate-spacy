@@ -1,0 +1,27 @@
+#+TITLE: Solution Test
+#+AUTHOR: Claude
+
+* Simple Test
+
+A very simple test to verify bidirectional tangle/detangle.
+
+#+begin_src python :tangle solution_test.py :comments link
+  #!/usr/bin/env python
+  """
+  Solution test file for proper detangling.
+  """
+
+  def hello():
+      """Say hello."""
+      print("Hello, world!")
+      return "Hello, world!"
+
+  def add(a, b):
+      """Add two numbers and return the result."""
+      result = a + b
+      return result
+
+  if __name__ == "__main__":
+      hello()
+      print(f"1 + 2 = {add(1, 2)}")
+#+end_src

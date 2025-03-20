@@ -1,0 +1,28 @@
+#+TITLE: Tangle/Detangle Test
+#+AUTHOR: Claude
+#+PROPERTY: header-args :padline yes
+
+* Simple Test
+
+A very simple test to verify tangle/detangle.
+
+#+begin_src python :tangle test.py
+# -*- tangle-source: "test.org::*Simple Test" -*-
+"""
+Simple test file for tangle/detangle.
+"""
+
+def hello():
+    """Say hello."""
+    print("Hello, world!")
+    return "Hello, world!"
+
+def add(a, b):
+    """Add two numbers."""
+    sum = a + b
+    return sum
+
+if __name__ == "__main__":
+    hello()
+    print(f"1 + 2 = {add(1, 2)}")
+#+end_src
