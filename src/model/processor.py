@@ -1,6 +1,7 @@
 """
 Core NLP text processing functionality using spaCy.
 """
+# tangle: src/model/processor.py
 import spacy
 from typing import Dict, List, Any, Optional
 
