@@ -55,6 +55,14 @@
 - *Perspective*: "I've seen dozens of NLP wrappers come and go. This is another over-engineered solution to a problem that doesn't exist. Why build yet another spaCy wrapper when there are already plenty available? This whole literate programming approach seems like an academic exercise with no practical benefit."
 - *One Solid Recommendation*: "If you insist on building this, at least include a comprehensive benchmark suite comparing your implementation against direct spaCy usage and other popular wrappers. Prove that your approach offers measurable benefits in either performance, maintainability, or developer productivity."
 
+* Literate Programming Workflow
+- Always edit ~.org~ files, not the generated Python files
+- Add ~:comments link~ to all src blocks: ~#+begin_src python :tangle file.py :comments link~
+- Run ~make tangle~ to generate code files with proper link comments
+- Make changes to org files whenever possible
+- If you must edit Python files directly, run ~make detangle~ to sync changes back
+- Run ~make status~ to check if files need tangling or detangling
+
 * Git Workflow
 - Create branches with descriptive names: ~git checkout -b feat/new-feature~
 - Use conventional commits:
