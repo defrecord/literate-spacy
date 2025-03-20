@@ -1,9 +1,11 @@
-.PHONY: setup download-models run-server run-client test clean
+.PHONY: setup download-models run-server run-client test clean tangle detangle
 
 # Variables
 PYTHON := python3
 PIP := $(PYTHON) -m pip
 MODELS := en_core_web_sm
+EMACS := emacs
+ORG_FILE := spacy-nlp-tool.org
 
 # Setup the environment
 setup:
@@ -18,7 +20,7 @@ download-models:
 run-server:
 	$(PYTHON) -m src.server.server
 
-# Example client command
+# Run the client
 run-client:
 	$(PYTHON) -m src.client.client
 
@@ -30,21 +32,25 @@ clean:
 	rm -rf *.egg-info
 	rm -rf build dist
 
-# Install development dependencies
+# Development tasks
 dev-setup: setup
 	$(PIP) install pytest black isort flake8
 
-# Format code
 format:
 	isort src scripts
 	black src scripts
 
-# Check code quality
 lint:
 	flake8 src scripts
 	isort --check src scripts
 	black --check src scripts
 
-# Run tests
 test:
 	pytest tests/
+
+# Org-mode tasks
+tangle:
+	$(EMACS) --batch --eval "(require 'org)" --eval "(progn (find-file \"$(ORG_FILE)\") (org-babel-tangle) (kill-buffer))"
+
+detangle:
+	$(EMACS) --batch --eval "(require 'org)" --eval "(progn (find-file \"$(ORG_FILE)\") (org-babel-detangle) (save-buffer) (kill-buffer))"
