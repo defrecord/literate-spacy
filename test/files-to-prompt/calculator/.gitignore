@@ -1,0 +1,16 @@
+# Workspace directory for test artifacts
+.workspace/*
+!.workspace/.gitkeep
+
+# Ollama response files
+*.response.org
+*.response.md
+
+# Generated org files
+project.org
+calculator.org
+modified_*.org
+
+# Emacs backup files
+*~
+\#*\#

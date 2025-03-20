@@ -1,6 +1,17 @@
 #+TITLE: Literate-spaCy Development Guide
 #+AUTHOR: Claude
 
+* Overview
+
+This is the official development guide for the Literate-spaCy project. This document provides all essential information for developers working with this codebase, including development workflow, build commands, and coding standards.
+
+* Important Notes for Claude and Other Agentic Assistants
+
+- All code should ONLY be edited in ~.org~ files, not in generated Python files
+- After making changes to ~.org~ files, run ~make tangle~ to update Python files
+- If Python files are edited directly, run ~make detangle~ to sync changes back to ~.org~ files
+- The main source of truth is always the ~.org~ files, not the generated code
+
 * Review Personas
 
 ** Staff Engineer
@@ -63,6 +74,12 @@
 - If you must edit Python files directly, run ~make detangle~ to sync changes back
 - Run ~make status~ to check if files need tangling or detangling
 
+* Tangle/Detangle Commands
+- Tangle (org → code): ~make tangle~
+- Detangle (code → org): ~make detangle~ 
+- Check status: ~make status~
+- Verify successful detangle by checking the org file for your changes
+
 * Git Workflow
 - Create branches with descriptive names: ~git checkout -b feat/new-feature~
 - Use conventional commits:
@@ -78,13 +95,14 @@
 - Create PR when ready
 
 * Build & Setup Commands
-- Setup: ~make setup~
+- Setup environment: ~make setup~
 - Install dev dependencies: ~make dev-setup~
-- Download models: ~make download-models~
+- Download spaCy models: ~make download-models~
 - Run server: ~make run-server~
 - Run client: ~make run-client~
-- Run tests: ~pytest tests/~
+- Run all tests: ~pytest tests/~
 - Run single test: ~pytest tests/path/to/test.py::test_function_name -v~
+- Run tests by pattern: ~pytest tests/ -k "pattern"~
 - Lint code: ~make lint~
 - Format code: ~make format~
 - Clean artifacts: ~make clean~
@@ -101,3 +119,16 @@
 - *Error Handling*: Use specific exceptions with descriptive messages, handle exceptions at appropriate levels
 - *Style Checks*: Follow Black formatting and isort import sorting
 - *Project Structure*: Organized into client, server, and model components with clean separation of concerns
+
+* Debugging Tips
+- For server issues: Check logs with ~make run-server~ with DEBUG level logging
+- For client issues: Add verbose mode with debug prints
+- For NLP model issues: Test component execution separately with small inputs
+- For tangle/detangle issues: Run ~make status~ to identify affected files
+
+* Project Architecture
+- *src/client/*: API client implementation for interfacing with the server
+- *src/server/*: FastAPI server implementation exposing NLP endpoints
+- *src/model/*: Core spaCy processing functionality and NLP operations
+- *scripts/*: Utility scripts for setup, model downloads, and management
+- Designed with separation of concerns for maintainability and testing

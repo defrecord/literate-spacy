@@ -1,0 +1,28 @@
+# Generated directories and files
+/generated/
+**/generated/
+
+# Org-mode temporary files
+*~
+\#*\#
+.#*
+
+# Test workspace directories
+**/test/*/.workspace/*
+!**/test/*/.workspace/.gitkeep
+
+# Ollama response files
+*.response.org
+*.response.md
+
+# Test output directories that shouldn't be committed
+test/files-to-prompt/calculator/new-repo/
+
+# Generated org files
+project.org
+calculator.org
+modified_*.org
+
+# Emacs backup files
+*~
+\#*\#

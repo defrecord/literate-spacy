@@ -1,0 +1,46 @@
+#+TITLE: Tangle/Detangle Test
+#+AUTHOR: Claude
+#+PROPERTY: header-args :padline yes
+
+* Simple Test File
+
+This is a test file to verify tangle/detangle functionality.
+
+** Text Block 
+:PROPERTIES:
+:header-args: :tangle generated/test.txt :mkdirp yes
+:END:
+
+#+begin_src text
+This is a simple text file.
+It will be tangled to generated/test.txt.
+
+Line 1: Hello World
+Line 2: Testing tangle
+Line 3: Testing detangle
+#+end_src
+
+** Python Code
+:PROPERTIES:
+:header-args: :tangle generated/test.py :mkdirp yes
+:END:
+
+#+begin_src python
+"""
+Test Python file for tangle/detangle.
+"""
+# -*- tangle-source: "test/test.org::*Python Code" -*-
+
+def hello_world():
+    """Print hello world message."""
+    print("Hello, World!")
+    return "Hello, World!"
+
+def add(a, b):
+    """Add two numbers."""
+    return a + b
+
+if __name__ == "__main__":
+    hello_world()
+    print(f"2 + 3 = {add(2, 3)}")
+#+end_src
