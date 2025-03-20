@@ -1,0 +1,631 @@
+#+TITLE: spaCy NLP Tool
+#+AUTHOR: Claude
+#+DATE: 2025-03-20
+#+PROPERTY: header-args :results silent
+
+* Overview
+This document contains a simple spaCy-based NLP tool with both client and server components. 
+The architecture includes:
+
+- A server that exposes API endpoints for NLP operations
+- A client for interacting with the server
+- Core NLP models and functionality
+- Support scripts and Makefile for setup and deployment
+
+#+begin_src mermaid :file images/architecture.png
+graph TD
+    Client[Client Module] -->|API Requests| Server
+    Server[Server Module] -->|Uses| Models
+    Models[NLP Models] -->|Processes| Data
+    Scripts[Support Scripts] -->|Configure| Server
+    Scripts -->|Setup| Models
+    Makefile -->|Builds| All
+#+end_src
+
+* Project Structure
+Our code will be tangled to the following structure:
+
+#+begin_src bash :tangle no
+detangle-demo/
+├── Makefile
+├── src/
+│   ├── client/
+│   │   ├── __init__.py
+│   │   └── client.py
+│   ├── server/
+│   │   ├── __init__.py
+│   │   └── server.py
+│   └── model/
+│       ├── __init__.py
+│       └── processor.py
+└── scripts/
+    ├── setup.py
+    └── download_models.py
+#+end_src
+
+Let's create each component.
+
+* Core NLP Model
+:PROPERTIES:
+:header-args: :tangle src/model/processor.py :mkdirp yes
+:END:
+
+Our core NLP processor will use spaCy to analyze text.
+
+#+begin_src python
+"""
+Core NLP text processing functionality using spaCy.
+"""
+import spacy
+from typing import Dict, List, Any, Optional
+
+
+class NLPProcessor:
+    """Primary NLP processor using spaCy models."""
+    
+    def __init__(self, model_name: str = "en_core_web_sm"):
+        """
+        Initialize the NLP processor with the specified spaCy model.
+        
+        Args:
+            model_name: Name of the spaCy model to load
+        """
+        self.model_name = model_name
+        try:
+            self.nlp = spacy.load(model_name)
+        except OSError:
+            raise ValueError(f"Model {model_name} not found. Run download_models.py first.")
+            
+    def analyze_text(self, text: str) -> Dict[str, Any]:
+        """
+        Perform basic NLP analysis on the provided text.
+        
+        Args:
+            text: Input text to analyze
+            
+        Returns:
+            Dictionary with analysis results
+        """
+        doc = self.nlp(text)
+        
+        return {
+            "entities": self._get_entities(doc),
+            "tokens": self._get_tokens(doc),
+            "sentences": self._get_sentences(doc),
+            "pos_tags": self._get_pos_tags(doc),
+            "dependencies": self._get_dependencies(doc)
+        }
+    
+    def _get_entities(self, doc) -> List[Dict[str, Any]]:
+        """Extract named entities from spaCy doc."""
+        return [
+            {"text": ent.text, "start": ent.start_char, "end": ent.end_char, 
+             "label": ent.label_, "description": spacy.explain(ent.label_)}
+            for ent in doc.ents
+        ]
+    
+    def _get_tokens(self, doc) -> List[Dict[str, str]]:
+        """Extract basic token information from spaCy doc."""
+        return [
+            {"text": token.text, "lemma": token.lemma_}
+            for token in doc
+        ]
+    
+    def _get_sentences(self, doc) -> List[str]:
+        """Extract sentences from spaCy doc."""
+        return [sent.text for sent in doc.sents]
+    
+    def _get_pos_tags(self, doc) -> List[Dict[str, str]]:
+        """Extract part-of-speech tags from spaCy doc."""
+        return [
+            {"text": token.text, "pos": token.pos_, "description": spacy.explain(token.pos_)}
+            for token in doc
+        ]
+    
+    def _get_dependencies(self, doc) -> List[Dict[str, Any]]:
+        """Extract dependency parsing information from spaCy doc."""
+        return [
+            {"text": token.text, "dep": token.dep_, 
+             "head": token.head.text, "description": spacy.explain(token.dep_)}
+            for token in doc
+        ]
+#+end_src
+
+** Model Package Initialization
+:PROPERTIES:
+:header-args: :tangle src/model/__init__.py :mkdirp yes
+:END:
+
+#+begin_src python
+"""
+NLP model package for the spaCy tool.
+"""
+from .processor import NLPProcessor
+
+__all__ = ["NLPProcessor"]
+#+end_src
+
+* Server Component
+:PROPERTIES:
+:header-args: :tangle src/server/server.py :mkdirp yes
+:END:
+
+The server exposes our NLP functionality via a FastAPI interface.
+
+#+begin_src python
+"""
+FastAPI server providing NLP endpoints using our processor.
+"""
+import os
+from typing import Dict, Any, Optional
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+import uvicorn
+
+from ..model.processor import NLPProcessor
+
+
+class TextRequest(BaseModel):
+    """Request model for text analysis."""
+    text: str
+    model: Optional[str] = "en_core_web_sm"
+
+
+class HealthResponse(BaseModel):
+    """Response model for health check endpoint."""
+    status: str
+    models_available: Dict[str, bool]
+
+
+app = FastAPI(title="spaCy NLP API", 
+              description="A simple API for text analysis using spaCy")
+
+# Global processors cache
+processors = {}
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize default processor on startup."""
+    # Load the default model
+    default_model = os.environ.get("DEFAULT_SPACY_MODEL", "en_core_web_sm")
+    try:
+        processors[default_model] = NLPProcessor(model_name=default_model)
+    except ValueError as e:
+        print(f"Warning: Could not load default model: {e}")
+
+
+@app.get("/health", response_model=HealthResponse)
+async def health_check():
+    """Check if the API is running and which models are available."""
+    models = ["en_core_web_sm", "en_core_web_md", "en_core_web_lg"]
+    
+    return {
+        "status": "ok",
+        "models_available": {
+            model: model in processors for model in models
+        }
+    }
+
+
+@app.post("/analyze")
+async def analyze_text(request: TextRequest) -> Dict[str, Any]:
+    """
+    Analyze the provided text with the specified model.
+    
+    Args:
+        request: The text analysis request
+        
+    Returns:
+        Dictionary with analysis results
+    """
+    model_name = request.model
+    
+    # Load the model if not already loaded
+    if model_name not in processors:
+        try:
+            processors[model_name] = NLPProcessor(model_name=model_name)
+        except ValueError:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Model '{model_name}' not available. Run download_models.py first."
+            )
+    
+    # Process the text
+    processor = processors[model_name]
+    return processor.analyze_text(request.text)
+
+
+def start_server(host: str = "0.0.0.0", port: int = 8000):
+    """Start the server with the given host and port."""
+    uvicorn.run(app, host=host, port=port)
+
+
+if __name__ == "__main__":
+    start_server()
+#+end_src
+
+** Server Package Initialization
+:PROPERTIES:
+:header-args: :tangle src/server/__init__.py :mkdirp yes
+:END:
+
+#+begin_src python
+"""
+Server package for the spaCy NLP tool.
+"""
+from .server import app, start_server
+
+__all__ = ["app", "start_server"]
+#+end_src
+
+* Client Component
+:PROPERTIES:
+:header-args: :tangle src/client/client.py :mkdirp yes
+:END:
+
+The client provides a Python interface to the server.
+
+#+begin_src python
+"""
+Client for interacting with the spaCy NLP API server.
+"""
+import json
+import requests
+from typing import Dict, Any, Optional
+import os
+
+
+class NLPClient:
+    """
+    Client for the spaCy NLP API.
+    
+    Provides methods to interact with the server component.
+    """
+    
+    def __init__(self, base_url: Optional[str] = None):
+        """
+        Initialize the client with the server's base URL.
+        
+        Args:
+            base_url: Base URL of the NLP API server
+                     (defaults to SPACY_API_URL environment variable or localhost:8000)
+        """
+        self.base_url = base_url or os.environ.get("SPACY_API_URL", "http://localhost:8000")
+        
+    def check_health(self) -> Dict[str, Any]:
+        """
+        Check if the server is running and return available models.
+        
+        Returns:
+            Server health status
+        
+        Raises:
+            ConnectionError: If the server cannot be reached
+        """
+        try:
+            response = requests.get(f"{self.base_url}/health")
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as e:
+            raise ConnectionError(f"Failed to connect to NLP server: {e}")
+    
+    def analyze_text(self, text: str, model: str = "en_core_web_sm") -> Dict[str, Any]:
+        """
+        Send text to the server for analysis.
+        
+        Args:
+            text: Text to analyze
+            model: spaCy model to use
+            
+        Returns:
+            Analysis results from the server
+            
+        Raises:
+            ConnectionError: If the server cannot be reached
+            ValueError: If the server returns an error
+        """
+        try:
+            response = requests.post(
+                f"{self.base_url}/analyze",
+                json={"text": text, "model": model}
+            )
+            
+            if response.status_code == 400:
+                raise ValueError(response.json().get("detail", "Unknown error"))
+                
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as e:
+            raise ConnectionError(f"Failed to connect to NLP server: {e}")
+    
+    def print_analysis(self, text: str, model: str = "en_core_web_sm"):
+        """
+        Analyze text and print the results in a readable format.
+        
+        Args:
+            text: Text to analyze
+            model: spaCy model to use
+        """
+        try:
+            result = self.analyze_text(text, model)
+            
+            print(f"\n=== Analysis of text: '{text[:50]}...' ===\n")
+            
+            # Print entities
+            if result["entities"]:
+                print("ENTITIES:")
+                for entity in result["entities"]:
+                    print(f"  {entity['text']} - {entity['label']} ({entity['description']})")
+            
+            # Print sentences
+            print("\nSENTENCES:")
+            for i, sent in enumerate(result["sentences"], 1):
+                print(f"  {i}. {sent}")
+            
+            # Print POS tags (sample)
+            print("\nPART-OF-SPEECH TAGS (sample):")
+            for tag in result["pos_tags"][:10]:  # Show first 10
+                print(f"  {tag['text']} - {tag['pos']} ({tag['description']})")
+            
+            if len(result["pos_tags"]) > 10:
+                print("  ...")
+            
+            print("\nAnalysis complete.")
+            
+        except (ConnectionError, ValueError) as e:
+            print(f"Error: {e}")
+
+
+if __name__ == "__main__":
+    # Example usage
+    client = NLPClient()
+    client.print_analysis(
+        "Apple is looking at buying U.K. startup for $1 billion. "
+        "Steve Jobs founded Apple in 1976."
+    )
+#+end_src
+
+** Client Package Initialization
+:PROPERTIES:
+:header-args: :tangle src/client/__init__.py :mkdirp yes
+:END:
+
+#+begin_src python
+"""
+Client package for the spaCy NLP tool.
+"""
+from .client import NLPClient
+
+__all__ = ["NLPClient"]
+#+end_src
+
+* Setup Scripts
+** Download Models Script
+:PROPERTIES:
+:header-args: :tangle scripts/download_models.py :mkdirp yes
+:END:
+
+Script to download required spaCy models.
+
+#+begin_src python
+#!/usr/bin/env python3
+"""
+Script to download required spaCy models.
+"""
+import subprocess
+import sys
+import argparse
+
+
+def download_model(model_name):
+    """Download a specific spaCy model."""
+    print(f"Downloading {model_name}...")
+    result = subprocess.run(
+        [sys.executable, "-m", "spacy", "download", model_name],
+        capture_output=True,
+        text=True
+    )
+    
+    if result.returncode != 0:
+        print(f"Error downloading {model_name}: {result.stderr}")
+        return False
+    
+    print(f"Successfully downloaded {model_name}")
+    return True
+
+
+def main():
+    """Main entry point for the download script."""
+    parser = argparse.ArgumentParser(description="Download spaCy models")
+    parser.add_argument(
+        "--models", 
+        nargs="+", 
+        default=["en_core_web_sm"],
+        help="Models to download (default: en_core_web_sm)"
+    )
+    args = parser.parse_args()
+    
+    success = True
+    for model in args.models:
+        if not download_model(model):
+            success = False
+    
+    if not success:
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
+#+end_src
+
+** Setup Script
+:PROPERTIES:
+:header-args: :tangle scripts/setup.py :mkdirp yes
+:END:
+
+Setup script for installing the package.
+
+#+begin_src python
+#!/usr/bin/env python3
+"""
+Setup script for the spaCy NLP tool.
+"""
+from setuptools import setup, find_packages
+
+setup(
+    name="spacy-nlp-tool",
+    version="0.1.0",
+    packages=find_packages(),
+    install_requires=[
+        "spacy>=3.5.0",
+        "fastapi>=0.95.0",
+        "uvicorn>=0.21.0",
+        "requests>=2.28.0",
+        "pydantic>=1.10.0",
+    ],
+    entry_points={
+        "console_scripts": [
+            "nlp-server=src.server.server:start_server",
+        ],
+    },
+    python_requires=">=3.8",
+    author="Claude",
+    author_email="example@example.com",
+    description="A simple NLP tool using spaCy",
+)
+#+end_src
+
+* Makefile
+:PROPERTIES:
+:header-args: :tangle Makefile :mkdirp yes
+:END:
+
+Let's create a Makefile to automate common tasks.
+
+#+begin_src makefile
+.PHONY: setup download-models run-server run-client test clean
+
+# Variables
+PYTHON := python3
+PIP := $(PYTHON) -m pip
+MODELS := en_core_web_sm
+
+# Setup the environment
+setup:
+	$(PIP) install -e .
+	$(MAKE) download-models
+
+# Download spaCy models
+download-models:
+	$(PYTHON) scripts/download_models.py --models $(MODELS)
+
+# Run the server
+run-server:
+	$(PYTHON) -m src.server.server
+
+# Example client command
+run-client:
+	$(PYTHON) -m src.client.client
+
+# Clean artifacts
+clean:
+	rm -rf __pycache__
+	rm -rf src/__pycache__
+	rm -rf src/*/__pycache__
+	rm -rf *.egg-info
+	rm -rf build dist
+
+# Install development dependencies
+dev-setup: setup
+	$(PIP) install pytest black isort flake8
+
+# Format code
+format:
+	isort src scripts
+	black src scripts
+
+# Check code quality
+lint:
+	flake8 src scripts
+	isort --check src scripts
+	black --check src scripts
+
+# Run tests
+test:
+	pytest tests/
+#+end_src
+
+* Running the Project
+
+After tangling the files with ~C-c C-v t~ in Emacs, you can set up and run the project:
+
+#+begin_src bash :tangle no
+# Navigate to the project directory
+cd detangle-demo
+
+# Set up the environment
+make setup
+
+# Run the server
+make run-server
+
+# In another terminal, run the client
+make run-client
+#+end_src
+
+* Detangling Process
+
+The detangle process allows you to sync code changes back to the org file after editing the tangled files directly. Here's how to use it:
+
+1. First, tangle this file with ~C-c C-v t~ to create all the files and directories
+2. Edit one of the generated files, for example ~src/client/client.py~
+3. Use ~org-babel-detangle~ (bound to ~C-c C-v d~) to sync changes back to this org file
+
+#+begin_src mermaid :file images/tangle-detangle.png
+sequenceDiagram
+    participant O as Org File
+    participant FS as File System
+    
+    O->>+FS: Tangle (C-c C-v t)
+    Note over FS: Generated Files Created
+    FS-->>-O: Tangle Complete
+    
+    Note over FS: Edit Generated Files
+    
+    FS->>+O: Detangle (C-c C-v d)
+    Note over O: Updates Source Blocks
+    O-->>-FS: Detangle Complete
+#+end_src
+
+* Example of Detangle Change
+
+Let's imagine we modify the ~NLPClient~ class in the tangled ~src/client/client.py~ file to add a new method:
+
+```python
+def summarize(self, text: str, model: str = "en_core_web_sm") -> str:
+    """
+    Request a summary of the provided text.
+    
+    Args:
+        text: Text to summarize
+        model: spaCy model to use
+        
+    Returns:
+        Text summary
+    """
+    # Implementation details would go here
+    pass
+```
+
+After this change, run ~C-c C-v d~ (org-babel-detangle) in the org buffer, and the change will be synchronized back to the source block in this org file.
+
+* Conclusion
+
+This literate programming approach using org-mode with Babel provides several benefits:
+
+1. Documentation and code are always in sync
+2. The structure of the code is clear from the org document hierarchy
+3. Changes can be made either in the source files or in the org file
+4. The tangling process ensures code is in the right place with proper headers
+5. The detangling process allows edits to propagate back to the org source

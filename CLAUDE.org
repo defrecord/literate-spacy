@@ -1,0 +1,27 @@
+#+TITLE: Literate-spaCy Development Guide
+#+AUTHOR: Claude
+
+* Build & Setup Commands
+- Setup: ~make setup~
+- Install dev dependencies: ~make dev-setup~
+- Download models: ~make download-models~
+- Run server: ~make run-server~
+- Run client: ~make run-client~
+- Run tests: ~pytest tests/~
+- Run single test: ~pytest tests/path/to/test.py::test_function_name -v~
+- Lint code: ~make lint~
+- Format code: ~make format~
+- Clean artifacts: ~make clean~
+
+* Code Style Guidelines
+- *Imports*: Group imports by standard lib, third-party, local with a blank line between groups
+- *Typing*: Use type hints for all function parameters and return values
+- *Documentation*: Docstrings for all classes and functions using Google style format
+- *Naming*:
+  - Classes: ~PascalCase~
+  - Functions/methods: ~snake_case~
+  - Constants: ~UPPER_SNAKE_CASE~
+  - Variables: ~snake_case~
+- *Error Handling*: Use specific exceptions with descriptive messages, handle exceptions at appropriate levels
+- *Style Checks*: Follow Black formatting and isort import sorting
+- *Project Structure*: Organized into client, server, and model components with clean separation of concerns

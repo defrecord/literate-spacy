@@ -1,0 +1,10 @@
+# Mark org-mode generated files as generated
+CLAUDE.org linguist-generated=true
+README.org linguist-generated=false
+spacy-nlp-tool.org linguist-generated=false
+
+# Mark detangled code files as generated
+src/client/*.py linguist-generated=true
+src/model/*.py linguist-generated=true
+src/server/*.py linguist-generated=true
+scripts/*.py linguist-generated=true

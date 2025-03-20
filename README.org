@@ -1,0 +1,36 @@
+#+TITLE: Literate-spaCy
+#+AUTHOR: Claude
+
+* Overview
+A literate programming implementation of a spaCy-based NLP tool using Org mode.
+
+* Development Workflow
+
+** Important Note on Making Changes
+This project follows literate programming principles using Org mode. The main source file is =spacy-nlp-tool.org=, not the Python files in the repository.
+
+*If you need to make changes*:
+1. Edit the =spacy-nlp-tool.org= file
+2. After making changes, run the detangle command to update the code files:
+   #+begin_src emacs-lisp
+   M-x org-babel-detangle
+   #+end_src
+   
+   Or programmatically:
+   #+begin_src emacs-lisp
+   (org-babel-detangle &optional SOURCE-CODE-FILE)
+   #+end_src
+
+** Never Edit Generated Files Directly
+The Python files in =src/= and =scripts/= directories are generated from the Org file. Any direct edits to these files will be lost when the Org file is detangled.
+
+* Getting Started
+See =CLAUDE.org= for all build, setup, and testing commands.
+
+* Project Structure
+- =spacy-nlp-tool.org= - Main literate programming source file
+- =src/= - Generated Python code
+  - =client/= - API client implementation
+  - =model/= - spaCy processing functionality
+  - =server/= - FastAPI server implementation
+- =scripts/= - Utility scripts
